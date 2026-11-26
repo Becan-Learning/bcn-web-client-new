@@ -1,0 +1,4 @@
+{"op":"add","id":"axes-1","kind":"axes","region":"figure","layer":"scene","props":{"xRange":[-4,4],"yRange":[-4,4]},"meaning":"plane","anchor":{"speech":"sp_1","char":0}}
+{"op":"add","id":"p","kind":"dot","region":"figure","layer":"scene","props":{"axes":"axes-1","at":[-2,1],"label":"A","side":"start"},"meaning":"point A","anchor":{"speech":"sp_1","char":0}}
+{"op":"add","id":"to-origin","kind":"arrow","region":"figure","layer":"scene","props":{"axes":"axes-1","from":[-2,1],"to":[0,0],"color":"accent"},"meaning":"from A to the origin","anchor":{"speech":"sp_1","char":0}}
+{"op":"add","id":"ring","kind":"shape","region":"figure","layer":"scene","props":{"axes":"axes-1","dashed":true,"shape":"circle","center":[0,0],"radius":0.5},"meaning":"the origin","anchor":{"speech":"sp_1","char":0}}

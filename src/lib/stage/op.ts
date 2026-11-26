@@ -1,17 +1,26 @@
 /* VENDORED COPY. Do not edit here.
    Source: Becan-Learning/bcn-lk-agent-new, scene-engine/src/op.ts
-   Commit: f2d747e688ae93c1928058105ad42137a6f11687
+   Commit: 1cedfa67e89d5a32eb187a2c1c3285b66e642c74
    CONTRACT_VERSION: 2 (docs/contract.md in the agent repo)
    Re-vendor by copying op.ts and ops/*.ts as they are, dropping the ".js" suffix on their relative
    imports, together with scene-engine/fixtures/*.jsonl, and update this header. */
 /**
  * The Op schema: the source of truth for what travels on the `scene` text stream.
  *
- * Contract version 2 (see docs/contract.md). Element kinds so far: `note`, `text`, `tex`, `derivation`.
+ * Contract version 2 (see docs/contract.md). Element kinds so far: `note`, `text`, `tex`, `derivation` (ops/text.ts) and `axes`, `plot`, `dot`,
+ * `line`, `arrow`, `shape` (ops/figure.ts).
  * The web client vendors a copy of this file; keep it free of imports other than zod, and use
  * only the zod API that exists in both zod 3.25 and zod 4.
  */
 import { z } from "zod";
+import {
+  AxesPropsSchema,
+  DotPropsSchema,
+  FigureRegionSchema,
+  LinePropsSchema,
+  PlotPropsSchema,
+  ShapePropsSchema,
+} from "./ops/figure";
 import {
   DerivationPropsSchema,
   NotePropsSchema,
@@ -23,7 +32,7 @@ import {
 export const CONTRACT_VERSION = 2;
 
 /** Named regions of the Stage. */
-export const REGIONS = ["board", "notes"] as const;
+export const REGIONS = ["board", "notes", "figure"] as const;
 export const RegionSchema = z.enum(REGIONS);
 export type Region = z.infer<typeof RegionSchema>;
 
@@ -65,8 +74,27 @@ export const AddTextOpSchema = addOp("text", TextRegionSchema, TextPropsSchema);
 export const AddTexOpSchema = addOp("tex", TextRegionSchema, TexPropsSchema);
 export const AddDerivationOpSchema = addOp("derivation", TextRegionSchema, DerivationPropsSchema);
 
+// Figure kinds (ops/figure.ts): placed in math coordinates of an axes.
+export const AddAxesOpSchema = addOp("axes", FigureRegionSchema, AxesPropsSchema);
+export const AddPlotOpSchema = addOp("plot", FigureRegionSchema, PlotPropsSchema);
+export const AddDotOpSchema = addOp("dot", FigureRegionSchema, DotPropsSchema);
+export const AddLineOpSchema = addOp("line", FigureRegionSchema, LinePropsSchema);
+export const AddArrowOpSchema = addOp("arrow", FigureRegionSchema, LinePropsSchema);
+export const AddShapeOpSchema = addOp("shape", FigureRegionSchema, ShapePropsSchema);
+
 /** Every Op: add one element to the Scene. Each ticket adds its members here. */
-export const OpSchema = z.discriminatedUnion("kind", [AddNoteOpSchema, AddTextOpSchema, AddTexOpSchema, AddDerivationOpSchema]);
+export const OpSchema = z.discriminatedUnion("kind", [
+  AddNoteOpSchema,
+  AddTextOpSchema,
+  AddTexOpSchema,
+  AddDerivationOpSchema,
+  AddAxesOpSchema,
+  AddPlotOpSchema,
+  AddDotOpSchema,
+  AddLineOpSchema,
+  AddArrowOpSchema,
+  AddShapeOpSchema,
+]);
 export type Op = z.infer<typeof OpSchema>;
 
 /** Parse one line of the `scene` text stream. Throws on invalid JSON or an invalid Op. */
