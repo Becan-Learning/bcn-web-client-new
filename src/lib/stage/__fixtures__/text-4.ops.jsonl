@@ -1,0 +1,4 @@
+{"op":"add","id":"note-1","kind":"note","region":"notes","layer":"scene","props":{"text":"لا تنس أن للجذر التربيعي حلين: موجب وسالب","tone":"warning"},"meaning":"لا تنس أن للجذر التربيعي حلين: موجب وسالب","anchor":{"speech":"sp_1","char":24}}
+{"op":"add","id":"tex-2","kind":"tex","region":"board","layer":"scene","props":{"tex":"\\sqrt{x^2} = |x|"},"meaning":"formula: \\sqrt{x^2} = |x|","anchor":{"speech":"sp_1","char":24}}
+{"op":"add","id":"derivation-3","kind":"derivation","region":"board","layer":"scene","props":{"steps":[{"tex":"2x + 3 = 7"},{"tex":"2x = 4"},{"tex":"x = 2"}]},"meaning":"derivation in 3 steps: 2x + 3 = 7 to x = 2","anchor":{"speech":"sp_1","char":24}}
+{"op":"add","id":"text-4","kind":"text","region":"notes","layer":"scene","props":{"text":"الخلاصة","size":"title"},"meaning":"الخلاصة","anchor":{"speech":"sp_1","char":24}}

@@ -796,3 +796,15 @@
 @import "./board-l4.css";
 
 @import "./board-l3.css";
+
+/* المسرح: معادلة بلغت حدّ تصغيرها الأدنى (`data-wrap` يضعه Fit) تلتفّ عند العلاقات
+   والعمليات بدل أن تفيض. KaTeX يجعل `.katex` كتلة لا تلتفّ؛ هنا نعيدها سطرية. */
+[data-fit][data-wrap="true"] .katex {
+  display: inline;
+  white-space: normal;
+}
+[data-fit][data-wrap="true"] .katex .base {
+  display: inline;
+  white-space: normal;
+  width: auto;
+}

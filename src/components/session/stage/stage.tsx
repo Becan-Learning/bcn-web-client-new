@@ -1,57 +1,48 @@
 import { useTranslations } from "next-intl";
-import { splitLatinRuns } from "@/lib/stage/bidi";
-import { elementsIn, type StageElement, type StageState } from "@/lib/stage/stage";
+import { elementsIn, type StageState } from "@/lib/stage/stage";
+import { StageItem } from "./elements";
+import { StageLayout } from "./stage-layout";
 
-/* المسرح (Stage): يعرض ما رسمه المعلّم. في العقد v1 منطقة واحدة هي `notes`،
-   وعنصر واحد هو `note`. الاتجاه يتبع لغة المسار؛ والمقاطع اللاتينية داخل النص
-   تُعزل في span باتجاه ltr. ظهور الملاحظة حركة CSS تتوقّف مع «تقليل الحركة»
-   من القاعدة العامة في globals.css. */
+/* المسرح (Stage): يعرض ما رسمه المعلّم في ثلاث مناطق: figure (قريبًا) وboard وnotes.
+   الاتجاه يتبع لغة المسار ولا يُكتب على أي حاوية. المنطقة التي لا عناصر فيها لا تُرسم. */
 
-function NoteText({ text }: { text: string }) {
+function Region({
+  name,
+  label,
+  elements,
+}: {
+  name: "board" | "notes";
+  label: string;
+  elements: ReturnType<typeof elementsIn>;
+}) {
   return (
     <>
-      {splitLatinRuns(text).map((run, i) =>
-        run.ltr ? (
-          <span key={i} dir="ltr" className="[unicode-bidi:isolate]">
-            {run.text}
-          </span>
-        ) : (
-          <span key={i}>{run.text}</span>
-        ),
-      )}
+      <h2 className="mb-3 text-sm font-semibold text-ink-2">{label}</h2>
+      <ul data-region={name} className="flex flex-col gap-3">
+        {elements.map((element) => (
+          <StageItem key={element.id} element={element} />
+        ))}
+      </ul>
     </>
-  );
-}
-
-function Note({ element }: { element: StageElement }) {
-  return (
-    <li
-      data-element-id={element.id}
-      data-kind={element.kind}
-      className="animate-board-in rounded-md border border-line bg-panel px-4 py-3 text-lg leading-base text-ink"
-    >
-      <NoteText text={element.props.text} />
-    </li>
   );
 }
 
 export function Stage({ state }: { state: StageState }) {
   const t = useTranslations("Demo.stage");
+  const board = elementsIn(state, "board");
   const notes = elementsIn(state, "notes");
 
   return (
-    <section aria-label={t("label")} data-stage className="mx-auto w-full max-w-measure">
-      <h2 className="mb-3 text-sm font-semibold text-ink-2">{t("notes")}</h2>
-      {notes.length === 0 ? (
+    <section aria-label={t("label")} data-stage className="w-full">
+      {state.elements.length === 0 ? (
         <p data-stage-empty className="rounded-md bg-panel px-4 py-3 text-ink-2">
           {t("empty")}
         </p>
       ) : (
-        <ul data-region="notes" className="flex flex-col gap-3">
-          {notes.map((element) => (
-            <Note key={element.id} element={element} />
-          ))}
-        </ul>
+        <StageLayout
+          board={board.length > 0 ? <Region name="board" label={t("board")} elements={board} /> : null}
+          notes={notes.length > 0 ? <Region name="notes" label={t("notes")} elements={notes} /> : null}
+        />
       )}
     </section>
   );
