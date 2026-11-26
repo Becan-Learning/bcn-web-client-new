@@ -1,6 +1,6 @@
 /* VENDORED COPY. Do not edit here.
    Source: Becan-Learning/bcn-lk-agent-new, scene-engine/src/ops/text.ts
-   Commit: 1cedfa67e89d5a32eb187a2c1c3285b66e642c74
+   Commit: f74bd2c3b27443aedd923105f06e4e917f7eda27
    CONTRACT_VERSION: 2 (docs/contract.md in the agent repo)
    Re-vendor by copying op.ts and ops/*.ts as they are, dropping the ".js" suffix on their relative
    imports, together with scene-engine/fixtures/*.jsonl, and update this header. */

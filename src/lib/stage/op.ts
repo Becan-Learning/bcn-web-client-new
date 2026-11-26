@@ -1,13 +1,14 @@
 /* VENDORED COPY. Do not edit here.
    Source: Becan-Learning/bcn-lk-agent-new, scene-engine/src/op.ts
-   Commit: 1cedfa67e89d5a32eb187a2c1c3285b66e642c74
+   Commit: f74bd2c3b27443aedd923105f06e4e917f7eda27
    CONTRACT_VERSION: 2 (docs/contract.md in the agent repo)
    Re-vendor by copying op.ts and ops/*.ts as they are, dropping the ".js" suffix on their relative
    imports, together with scene-engine/fixtures/*.jsonl, and update this header. */
 /**
  * The Op schema: the source of truth for what travels on the `scene` text stream.
  *
- * Contract version 2 (see docs/contract.md). Element kinds so far: `note`, `text`, `tex`, `derivation` (ops/text.ts) and `axes`, `plot`, `dot`,
+ * Contract version 2 (see docs/contract.md). Operations: `add` (one element, by kind) and `clear`
+ * (empty a layer). Element kinds so far: `note`, `text`, `tex`, `derivation` (ops/text.ts) and `axes`, `plot`, `dot`,
  * `line`, `arrow`, `shape` (ops/figure.ts).
  * The web client vendors a copy of this file; keep it free of imports other than zod, and use
  * only the zod API that exists in both zod 3.25 and zod 4.
@@ -82,8 +83,8 @@ export const AddLineOpSchema = addOp("line", FigureRegionSchema, LinePropsSchema
 export const AddArrowOpSchema = addOp("arrow", FigureRegionSchema, LinePropsSchema);
 export const AddShapeOpSchema = addOp("shape", FigureRegionSchema, ShapePropsSchema);
 
-/** Every Op: add one element to the Scene. Each ticket adds its members here. */
-export const OpSchema = z.discriminatedUnion("kind", [
+/** `add`: one element joins the Scene. Each ticket adds its kinds here. */
+export const AddOpSchema = z.discriminatedUnion("kind", [
   AddNoteOpSchema,
   AddTextOpSchema,
   AddTexOpSchema,
@@ -95,9 +96,39 @@ export const OpSchema = z.discriminatedUnion("kind", [
   AddArrowOpSchema,
   AddShapeOpSchema,
 ]);
+export type AddOp = z.infer<typeof AddOpSchema>;
+
+/**
+ * `clear`: remove every element of `layer` from the Scene, whatever its kind or region. The `id`
+ * names this operation (it is not an element), so the engine can confirm or drop it like any
+ * other Op.
+ */
+export const ClearOpSchema = z
+  .object({
+    op: z.literal("clear"),
+    id: ElementIdSchema,
+    layer: z.string().min(1).max(64),
+    anchor: AnchorSchema,
+  })
+  .strict();
+export type ClearOp = z.infer<typeof ClearOpSchema>;
+
+/** Every Op. */
+export const OpSchema = z.union([AddOpSchema, ClearOpSchema]);
 export type Op = z.infer<typeof OpSchema>;
+
+/**
+ * The schema that explains an Op's mistakes best. A plain union reports only "invalid input", so
+ * pick the member by `op` first: a clear is read as a clear, anything else as an `add`, whose own
+ * union is told apart by `kind`.
+ */
+export function opSchemaFor(value: unknown): typeof AddOpSchema | typeof ClearOpSchema {
+  const isClear = typeof value === "object" && value !== null && (value as { op?: unknown }).op === "clear";
+  return isClear ? ClearOpSchema : AddOpSchema;
+}
 
 /** Parse one line of the `scene` text stream. Throws on invalid JSON or an invalid Op. */
 export function parseOpLine(line: string): Op {
-  return OpSchema.parse(JSON.parse(line));
+  const value: unknown = JSON.parse(line);
+  return opSchemaFor(value).parse(value);
 }
