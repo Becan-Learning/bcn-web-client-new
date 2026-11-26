@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { CONTRACT_VERSION, parseOpLine } from "./op";
 import { createLineReader } from "./scene-lines";
@@ -8,6 +8,10 @@ import { isContractMismatch, parseTutorMessage } from "./tutor-message";
 
 const fixtureText = readFileSync(new URL("./__fixtures__/tracer.ops.jsonl", import.meta.url), "utf8");
 const fixtureLines = fixtureText.trimEnd().split("\n");
+const fixtureDir = new URL("./__fixtures__/", import.meta.url);
+const fixtureFiles = readdirSync(fixtureDir)
+  .filter((name) => name.endsWith(".jsonl"))
+  .map((name) => ({ name, lines: readFileSync(new URL(name, fixtureDir), "utf8").trimEnd().split("\n") }));
 
 const note = (id: string, text = "ملاحظة") => ({
   op: "add",
@@ -21,15 +25,21 @@ const note = (id: string, text = "ملاحظة") => ({
 });
 
 describe("vendored contract", () => {
-  it("names the contract version in its header and exports the same one", () => {
-    const source = readFileSync(new URL("./op.ts", import.meta.url), "utf8");
+  it.each(["./op.ts", "./ops/text.ts"])("%s names the agent commit and the contract version in its header", (file) => {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
     expect(source).toMatch(/Commit: [0-9a-f]{40}/);
     expect(source).toContain(`CONTRACT_VERSION: ${CONTRACT_VERSION}`);
   });
 
-  it("every line of the agent's shared fixture is a valid Op", () => {
+  it("is contract version 2", () => {
+    expect(CONTRACT_VERSION).toBe(2);
+  });
+
+  it("every line of every shared fixture is a valid Op", () => {
     expect(fixtureLines.length).toBeGreaterThan(0);
-    for (const line of fixtureLines) expect(() => parseOpLine(line)).not.toThrow();
+    expect(fixtureFiles.length).toBeGreaterThanOrEqual(6); // tracer, text-demo and the prompt examples
+    for (const { name, lines } of fixtureFiles)
+      for (const line of lines) expect(() => parseOpLine(line), name).not.toThrow();
   });
 });
 
@@ -38,7 +48,28 @@ describe("Stage fold", () => {
     const stage = foldOps(fixtureLines.map((l) => JSON.parse(l) as unknown));
     const notes = elementsIn(stage, "notes");
     expect(notes.map((e) => e.id)).toEqual(["note-1"]);
-    expect(notes[0]?.props.text).toBe("الدوال التربيعية: f(x) = ax² + bx + c");
+    expect(notes[0]?.kind === "note" && notes[0].props.text).toBe("الدوال التربيعية: f(x) = ax² + bx + c");
+  });
+
+  it("puts the text demo's note on the notes region and its formula and derivation on the board", () => {
+    const demo = fixtureFiles.find((f) => f.name === "text-demo.ops.jsonl")!;
+    const stage = foldOps(demo.lines.map((l) => JSON.parse(l) as unknown));
+    expect(elementsIn(stage, "notes").map((e) => e.kind)).toEqual(["note"]);
+    expect(elementsIn(stage, "board").map((e) => e.kind)).toEqual(["tex", "derivation"]);
+  });
+
+  it("skips a tex op with an empty source, a too-long one, or a region it may not use", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const tex = (id: string, props: unknown, region = "board") => ({ ...note(id), kind: "tex", region, props });
+    const stage = foldOps([
+      tex("a", { tex: "x^2" }),
+      tex("b", { tex: "" }),
+      tex("c", { tex: "x".repeat(401) }),
+      tex("d", { tex: "x" }, "figure"),
+      tex("e", { tex: "x", display: true }),
+    ]);
+    expect(stage.elements.map((e) => e.id)).toEqual(["a"]);
+    warn.mockRestore();
   });
 
   it("keeps ops in arrival order and filters by layer", () => {
@@ -94,9 +125,9 @@ describe("scene line reader", () => {
 
 describe("tutor messages", () => {
   it("parses hello from bytes and flags a different contract version", () => {
-    const bytes = new TextEncoder().encode(JSON.stringify({ type: "hello", contract_version: 2 }));
+    const bytes = new TextEncoder().encode(JSON.stringify({ type: "hello", contract_version: 1 }));
     const hello = parseTutorMessage(bytes);
-    expect(hello).toEqual({ type: "hello", contract_version: 2 });
+    expect(hello).toEqual({ type: "hello", contract_version: 1 });
     expect(isContractMismatch(hello!.contract_version)).toBe(true);
     expect(isContractMismatch(CONTRACT_VERSION)).toBe(false);
     expect(parseTutorMessage("{")).toBeNull();

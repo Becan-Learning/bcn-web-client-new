@@ -1,0 +1,1 @@
+{"op":"add","id":"factoring","kind":"derivation","region":"board","layer":"scene","props":{"steps":[{"tex":"x^2 - 4 = 0","comment":"نبدأ بالمعادلة"},{"tex":"(x - 2)(x + 2) = 0","comment":"فرق مربعين"},{"tex":"x = 2 \\quad \\text{or} \\quad x = -2","comment":"كل عامل يساوي صفرا"}]},"meaning":"حل x² - 4 = 0 بالتحليل","anchor":{"speech":"sp_1","char":22}}

@@ -1,0 +1,2 @@
+{"op":"add","id":"quadratic-formula","kind":"tex","region":"board","layer":"scene","props":{"tex":"x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}"},"meaning":"قانون حل المعادلة التربيعية","anchor":{"speech":"sp_1","char":24}}
+{"op":"add","id":"text-1","kind":"text","region":"notes","layer":"scene","props":{"text":"المميز $\\Delta = b^2 - 4ac$ يحدد عدد الجذور"},"meaning":"تعريف المميز","anchor":{"speech":"sp_1","char":57}}
