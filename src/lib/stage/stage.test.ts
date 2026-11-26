@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CONTRACT_VERSION, parseOpLine } from "./op";
 import { createLineReader } from "./scene-lines";
 import { splitLatinRuns } from "./bidi";
+import { buildFigure } from "./figure";
 import { applyOp, elementsIn, EMPTY_STAGE, foldOps } from "./stage";
 import { isContractMismatch, parseTutorMessage } from "./tutor-message";
 import { applyTutorMessage, INITIAL_TUTOR, type TutorState } from "./tutor-state";
@@ -102,6 +103,22 @@ describe("Stage fold", () => {
     // Elements added after a clear show again, and ids of cleared elements are free to reuse.
     const again = foldOps([note("d"), note("a")], stage);
     expect(again.elements.map((e) => e.id)).toEqual(["b", "d", "a"]);
+  });
+
+  it("clear of the scene layer also clears figure and board elements, and the figure view is empty", () => {
+    const read = (name: string) =>
+      readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), "utf8")
+        .trimEnd()
+        .split("\n")
+        .map((l) => JSON.parse(l) as unknown);
+    const drawn = foldOps([...read("figure-demo.ops.jsonl"), ...read("text-demo.ops.jsonl")]);
+    expect(new Set(drawn.elements.map((e) => e.region))).toEqual(new Set(["figure", "notes", "board"]));
+    const cleared = foldOps([clearOp("clear-9")], drawn);
+    expect(cleared.elements).toEqual([]);
+    expect(buildFigure(cleared.elements).panels).toEqual([]);
+    // Only the cleared layer goes: an answer layer drawn on the figure survives a scene clear.
+    const answer = foldOps([{ ...read("figure-demo.ops.jsonl")[0] as object, id: "ax-a", layer: "answer:sp_2" }], drawn);
+    expect(foldOps([clearOp("clear-10")], answer).elements.map((e) => e.id)).toEqual(["ax-a"]);
   });
 
   it("a clear of an empty or unknown layer returns the state unchanged", () => {
