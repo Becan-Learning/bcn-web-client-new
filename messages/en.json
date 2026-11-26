@@ -1142,6 +1142,7 @@
     "contractMismatch": "The tutor’s contract version ({agent}) differs from this page’s ({page}). Update one of them before you continue.",
     "stage": {
       "label": "Stage",
+      "figure": "Figure",
       "board": "Board",
       "notes": "Notes",
       "empty": "Nothing has been drawn on the Stage yet.",

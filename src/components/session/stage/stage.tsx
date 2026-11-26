@@ -1,9 +1,10 @@
 import { useTranslations } from "next-intl";
 import { elementsIn, type StageState } from "@/lib/stage/stage";
 import { StageItem } from "./elements";
+import { FigureRegion } from "./figure-region";
 import { StageLayout } from "./stage-layout";
 
-/* المسرح (Stage): يعرض ما رسمه المعلّم في ثلاث مناطق: figure (قريبًا) وboard وnotes.
+/* المسرح (Stage): يعرض ما رسمه المعلّم في ثلاث مناطق: figure وboard وnotes.
    الاتجاه يتبع لغة المسار ولا يُكتب على أي حاوية. المنطقة التي لا عناصر فيها لا تُرسم. */
 
 function Region({
@@ -29,6 +30,7 @@ function Region({
 
 export function Stage({ state }: { state: StageState }) {
   const t = useTranslations("Demo.stage");
+  const figure = elementsIn(state, "figure");
   const board = elementsIn(state, "board");
   const notes = elementsIn(state, "notes");
 
@@ -40,6 +42,7 @@ export function Stage({ state }: { state: StageState }) {
         </p>
       ) : (
         <StageLayout
+          figure={figure.length > 0 ? <FigureRegion elements={figure} /> : null}
           board={board.length > 0 ? <Region name="board" label={t("board")} elements={board} /> : null}
           notes={notes.length > 0 ? <Region name="notes" label={t("notes")} elements={notes} /> : null}
         />
