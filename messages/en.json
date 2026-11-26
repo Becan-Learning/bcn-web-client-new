@@ -1129,5 +1129,21 @@
     "submit": "Save password",
     "submitting": "You’re saving your password…",
     "requestLink": "Request a new link"
+  },
+  "Demo": {
+    "title": "Tutor demo",
+    "start": "Start",
+    "connecting": "Connecting…",
+    "end": "End",
+    "ended": "The session has ended.",
+    "waiting": "Waiting for the tutor…",
+    "missingParams": "The link is incomplete: it needs a server URL and a token. Run the token command in the agent repo and open the link it prints.",
+    "connectionError": "Couldn’t connect to the room. Create a new link and try again.",
+    "contractMismatch": "The tutor’s contract version ({agent}) differs from this page’s ({page}). Update one of them before you continue.",
+    "stage": {
+      "label": "Stage",
+      "notes": "Notes",
+      "empty": "Nothing has been drawn on the Stage yet."
+    }
   }
 }
