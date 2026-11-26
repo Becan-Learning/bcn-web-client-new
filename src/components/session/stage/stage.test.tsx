@@ -88,10 +88,15 @@ describe("every shared fixture renders on the Stage", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       for (const locale of ["ar", "en"] as const) {
         const html = render(locale, ops);
-        for (const op of ops as Array<{ id: string; kind: string; region: string }>) {
+        // A `clear` in the fixture removes what was drawn before it: only the survivors show.
+        const survivors = foldOps(ops).elements;
+        const survivorIds = new Set(survivors.map((e) => e.id));
+        for (const op of survivors) {
           expect(html, `${locale} ${op.id}`).toContain(`data-element-id="${op.id}"`);
           expect(html).toContain(`data-kind="${op.kind}"`);
         }
+        for (const op of ops as Array<{ op: string; id: string }>)
+          if (op.op === "add" && !survivorIds.has(op.id)) expect(html).not.toContain(`data-element-id="${op.id}"`);
         expect(html).not.toContain("data-tex-error"); // every fixture formula parses in KaTeX
         expect(html).not.toMatch(/\b(ml|mr|pl|pr)-\d|\b(left|right)-\d|text-(left|right)/);
         expect(html).not.toMatch(/style="[^"]*(color|#[0-9a-fA-F]{3,8}|rgb\()/);

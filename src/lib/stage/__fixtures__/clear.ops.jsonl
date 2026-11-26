@@ -1,0 +1,3 @@
+{"op":"add","id":"first","kind":"note","region":"notes","layer":"scene","props":{"text":"ملاحظة أولى"},"meaning":"ملاحظة تُمسح","anchor":{"speech":"sp_1","char":16}}
+{"op":"clear","id":"clear-1","layer":"scene","anchor":{"speech":"sp_1","char":35}}
+{"op":"add","id":"second","kind":"note","region":"notes","layer":"scene","props":{"text":"ملاحظة ثانية"},"meaning":"ملاحظة بعد المسح","anchor":{"speech":"sp_1","char":35}}

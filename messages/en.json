@@ -1139,6 +1139,10 @@
     "waiting": "Waiting for the tutor…",
     "missingParams": "The link is incomplete: it needs a server URL and a token. Run the token command in the agent repo and open the link it prints.",
     "connectionError": "Couldn’t connect to the room. Create a new link and try again.",
+    "lessonLabel": "Lesson {index}",
+    "topicLabel": "Topic {index}",
+    "preparing": "The tutor is preparing the Topic…",
+    "chapterEnded": "The Chapter is finished. Thank you, and goodbye.",
     "contractMismatch": "The tutor’s contract version ({agent}) differs from this page’s ({page}). Update one of them before you continue.",
     "stage": {
       "label": "Stage",
