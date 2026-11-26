@@ -1,3 +1,7 @@
+> **Superseded.** The new tutor's wire contract is
+> [docs/contract.md in bcn-lk-agent-new](https://github.com/Becan-Learning/bcn-lk-agent-new/blob/dev/docs/contract.md).
+> This document describes the previous agent and is kept only for the old session view, until it is removed.
+
 # Agent contract: student question (push-to-ask)
 
 Status: agreed 2026-10-05. The web side ships first; the agent follows right after.

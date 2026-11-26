@@ -83,8 +83,9 @@ closed on its own. Topics without one end on a readiness question, which is not 
 _Avoid_: question (alone), quiz, assessment, open question
 
 **Student question** (سؤال الطالب):
-A spoken question the student deliberately starts by pressing Ask, cutting the tutor off
-mid-explanation. Outside a student question the tutor does not hear the student's voice.
+A question the student deliberately puts to the tutor, either spoken after pressing Ask or typed
+in the chat, cutting the tutor off mid-explanation. Outside a spoken student question the tutor
+does not hear the student's voice.
 _Avoid_: question (alone), interruption, voice message
 
 **Rating** (تقييم الحصة):
