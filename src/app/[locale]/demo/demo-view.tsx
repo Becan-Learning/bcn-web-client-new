@@ -42,7 +42,7 @@ export function DemoView({ phase, stage, agentVersion, missingParams, onStart, o
         ) : null}
       </header>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-6 overflow-y-auto px-4 py-4 md:px-6">
+      <main className="mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col gap-6 overflow-y-auto px-4 py-4 md:px-6">
         {mismatch ? (
           <p role="alert" data-contract-mismatch className="rounded-md border border-error px-4 py-3 text-error">
             {t("contractMismatch", { agent: agentVersion, page: CONTRACT_VERSION })}
