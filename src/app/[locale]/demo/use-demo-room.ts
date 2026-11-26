@@ -5,6 +5,7 @@ import { Room, RoomEvent } from "livekit-client";
 import { createLineReader } from "@/lib/stage/scene-lines";
 import { applyOp, EMPTY_STAGE } from "@/lib/stage/stage";
 import { parseTutorMessage } from "@/lib/stage/tutor-message";
+import { applyTutorMessage, INITIAL_TUTOR } from "@/lib/stage/tutor-state";
 import { SCENE_TOPIC, TUTOR_TOPIC } from "./topics";
 
 export type DemoPhase = "idle" | "connecting" | "live" | "ended" | "error";
@@ -14,7 +15,7 @@ export type DemoPhase = "idle" | "connecting" | "live" | "ended" | "error";
 export function useDemoRoom(url: string | undefined, token: string | undefined) {
   const [phase, setPhase] = useState<DemoPhase>("idle");
   const [room, setRoom] = useState<Room | null>(null);
-  const [agentVersion, setAgentVersion] = useState<number | null>(null);
+  const [tutor, dispatchTutor] = useReducer(applyTutorMessage, INITIAL_TUTOR);
   const [stage, dispatchOp] = useReducer(applyOp, EMPTY_STAGE);
   const roomRef = useRef<Room | null>(null);
 
@@ -37,7 +38,10 @@ export function useDemoRoom(url: string | undefined, token: string | undefined) 
     next.on(RoomEvent.DataReceived, (payload, _participant, _kind, topic) => {
       if (topic !== TUTOR_TOPIC) return;
       const message = parseTutorMessage(payload);
-      if (message?.type === "hello") setAgentVersion(message.contract_version);
+      if (!message) return;
+      dispatchTutor(message);
+      // The Chapter is taught and the agent is leaving: end here too.
+      if (message.type === "session_ending") void next.disconnect();
     });
     next.on(RoomEvent.Disconnected, () => setPhase((p) => (p === "error" ? p : "ended")));
 
@@ -64,5 +68,5 @@ export function useDemoRoom(url: string | undefined, token: string | undefined) 
     [],
   );
 
-  return { phase, room, agentVersion, stage, start, end };
+  return { phase, room, tutor, stage, start, end };
 }

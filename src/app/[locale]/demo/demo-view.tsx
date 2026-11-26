@@ -4,6 +4,7 @@ import { Stage } from "@/components/session/stage/stage";
 import { CONTRACT_VERSION } from "@/lib/stage/op";
 import type { StageState } from "@/lib/stage/stage";
 import { isContractMismatch } from "@/lib/stage/tutor-message";
+import type { TutorState } from "@/lib/stage/tutor-state";
 import type { DemoPhase } from "./use-demo-room";
 
 /* واجهة التجربة، عرضٌ فقط: الحالة كلها تأتي من الخطّاف في `demo-session`.
@@ -17,8 +18,8 @@ const secondaryButton =
 export type DemoViewProps = {
   phase: DemoPhase;
   stage: StageState;
-  /** From the agent's `hello`; null until it arrives. */
-  agentVersion: number | null;
+  /** What the agent's `tutor` events say: its contract version, the current Lesson and Topic, and whether it ended. */
+  tutor: TutorState;
   /** The link had no usable server URL or token. */
   missingParams: boolean;
   onStart: () => void;
@@ -27,8 +28,9 @@ export type DemoViewProps = {
   children?: ReactNode;
 };
 
-export function DemoView({ phase, stage, agentVersion, missingParams, onStart, onEnd, children }: DemoViewProps) {
+export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, children }: DemoViewProps) {
   const t = useTranslations("Demo");
+  const { agentVersion, lesson, topic, ending } = tutor;
   const mismatch = agentVersion !== null && isContractMismatch(agentVersion);
 
   return (
@@ -60,11 +62,36 @@ export function DemoView({ phase, stage, agentVersion, missingParams, onStart, o
           </p>
         ) : null}
 
+        {lesson ? (
+          <div data-progress aria-live="polite" className="flex flex-col gap-1">
+            <p data-lesson className="text-sm text-ink-2">
+              <span>{t("lessonLabel", { index: lesson.index })}</span>
+              <span aria-hidden> · </span>
+              <span className="font-semibold text-ink">{lesson.title}</span>
+            </p>
+            {topic ? (
+              <p data-topic className="text-lg font-semibold text-ink">
+                <span className="text-sm font-normal text-ink-2">{t("topicLabel", { index: topic.index })}</span>
+                <span aria-hidden> · </span>
+                {topic.title}
+              </p>
+            ) : (
+              <p data-topic-pending className="text-ink-2">
+                {t("preparing")}
+              </p>
+            )}
+          </div>
+        ) : null}
+
         <Stage state={stage} />
 
         {phase === "connecting" ? <p className="text-ink-2">{t("connecting")}</p> : null}
         {phase === "live" && agentVersion === null ? <p className="text-ink-2">{t("waiting")}</p> : null}
-        {phase === "ended" ? <p className="text-ink-2">{t("ended")}</p> : null}
+        {phase === "ended" ? (
+          <p data-ended={ending ? "chapter" : "left"} className="text-ink-2">
+            {ending ? t("chapterEnded") : t("ended")}
+          </p>
+        ) : null}
 
         {phase === "idle" || phase === "error" ? (
           <div className="mt-auto flex justify-center pb-4">

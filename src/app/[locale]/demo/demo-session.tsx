@@ -9,14 +9,14 @@ import { useDemoRoom } from "./use-demo-room";
 /* سطح الجلسة الداكن نفسه (`data-theme="dark" data-surface="session"` داخل SessionShell). */
 export function DemoSession({ url, token }: { url?: string; token?: string }) {
   const reduce = useReducedMotion();
-  const { phase, room, agentVersion, stage, start, end } = useDemoRoom(url, token);
+  const { phase, room, tutor, stage, start, end } = useDemoRoom(url, token);
 
   return (
     <SessionShell reduce={reduce}>
       <DemoView
         phase={phase}
         stage={stage}
-        agentVersion={agentVersion}
+        tutor={tutor}
         missingParams={!url || !token}
         onStart={() => void start()}
         onEnd={end}
