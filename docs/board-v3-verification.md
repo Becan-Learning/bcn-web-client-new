@@ -1,3 +1,7 @@
+> **Superseded.** The new tutor's wire contract is
+> [docs/contract.md in bcn-lk-agent-new](https://github.com/Becan-Learning/bcn-lk-agent-new/blob/dev/docs/contract.md).
+> This document describes the previous agent and is kept only for the old session view, until it is removed.
+
 # Board v3 — verification checklist (contract §9)
 
 Contract: [frontend-board-spec-v3.md](frontend-board-spec-v3.md). Fixtures: unedited copy of

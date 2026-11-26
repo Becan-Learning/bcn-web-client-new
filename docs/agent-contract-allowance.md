@@ -1,3 +1,7 @@
+> **Superseded.** The new tutor's wire contract is
+> [docs/contract.md in bcn-lk-agent-new](https://github.com/Becan-Learning/bcn-lk-agent-new/blob/dev/docs/contract.md).
+> This document describes the previous agent and is kept only for the old session view, until it is removed.
+
 # Agent contract: the Session budget and `allowance_reached`
 
 The backend grants every Session a budget when it issues the LiveKit token, and the agent ends the Session at that budget. When the student's Allowance (not the per-Session cap) set the budget, the agent tells the web, which shows that the student has reached their limits. This contract only adds to the existing attributes and `ui-control` packets; nothing existing changes.
