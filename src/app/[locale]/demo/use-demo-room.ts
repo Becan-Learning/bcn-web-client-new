@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { ConnectionState, Room, RoomEvent } from "livekit-client";
+import type { TrackReference } from "@livekit/components-react";
+import { ConnectionState, createLocalAudioTrack, Room, RoomEvent, Track, type LocalAudioTrack } from "livekit-client";
 import { sendQuestion } from "@/lib/stage/question";
 import { createLineReader } from "@/lib/stage/scene-lines";
 import { applyOp, EMPTY_STAGE } from "@/lib/stage/stage";
@@ -11,13 +12,17 @@ import { SCENE_TOPIC, TUTOR_TOPIC } from "./topics";
 
 export type DemoPhase = "idle" | "connecting" | "live" | "ended" | "error";
 
-/* الغرفة بلا خادم خلفي: الرمز والعنوان من الرابط. الميكروفون لا يُنشر أبدًا
-   في هذه التذكرة؛ الصوت الوارد يُعرض بـ RoomAudioRenderer في الأعلى. */
+/* الغرفة بلا خادم خلفي: الرمز والعنوان من الرابط. الميكروفون يُلتقط ويُكتم ثم يُنشر مكتومًا
+   عند «ابدأ» (كما في الجلسة القديمة)، ولا يُفتح إلا أثناء سؤال الطالب (`use-demo-ask`).
+   الصوت الوارد يُعرض بـ RoomAudioRenderer في الأعلى. */
 export function useDemoRoom(url: string | undefined, token: string | undefined) {
   const [phase, setPhase] = useState<DemoPhase>("idle");
   const [room, setRoom] = useState<Room | null>(null);
   const [tutor, dispatchTutor] = useReducer(applyTutorMessage, INITIAL_TUTOR);
   const [stage, dispatchOp] = useReducer(applyOp, EMPTY_STAGE);
+  const [micTrack, setMicTrack] = useState<TrackReference | null>(null);
+  const [micPublished, setMicPublished] = useState(false);
+  const [micUnavailable, setMicUnavailable] = useState(false);
   const roomRef = useRef<Room | null>(null);
 
   const start = useCallback(async () => {
@@ -46,13 +51,43 @@ export function useDemoRoom(url: string | undefined, token: string | undefined) 
     });
     next.on(RoomEvent.Disconnected, () => setPhase((p) => (p === "error" ? p : "ended")));
 
+    let microphone: Promise<LocalAudioTrack | null> | null = null;
     try {
       // Called from the Start click, so the browser lets the agent's audio play.
       void next.startAudio();
+      // Acquire and mute BEFORE publishing, so the microphone is never open outside a Student
+      // question. Connecting does not wait for the permission prompt.
+      microphone = createLocalAudioTrack()
+        .then(async (track) => {
+          await track.mute();
+          return track;
+        })
+        .catch((error) => {
+          console.warn("demo: the microphone is unavailable", error);
+          setMicUnavailable(true);
+          return null;
+        });
       await next.connect(url, token);
       setPhase("live");
+      const track = await microphone;
+      if (track) {
+        await next.localParticipant
+          .publishTrack(track, { source: Track.Source.Microphone, stopMicTrackOnMute: false })
+          .then(
+            (publication) => {
+              setMicTrack({ participant: next.localParticipant, publication, source: Track.Source.Microphone });
+              setMicPublished(true);
+            },
+            (error) => {
+              track.stop();
+              setMicUnavailable(true);
+              console.warn("demo: could not publish the muted microphone", error);
+            },
+          );
+      }
     } catch (error) {
       console.warn("demo: could not connect", error);
+      void microphone?.then((track) => track?.stop());
       setPhase("error");
       void next.disconnect();
     }
@@ -76,5 +111,5 @@ export function useDemoRoom(url: string | undefined, token: string | undefined) 
     [],
   );
 
-  return { phase, room, tutor, stage, start, end, ask };
+  return { phase, room, tutor, stage, start, end, ask, microphone: micTrack, micPublished, micUnavailable };
 }
