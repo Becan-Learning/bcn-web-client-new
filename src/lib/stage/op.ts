@@ -1,13 +1,13 @@
 /* VENDORED COPY. Do not edit here.
    Source: Becan-Learning/bcn-lk-agent-new, scene-engine/src/op.ts
-   Commit: 667e58154c4789d81b89660380a83408fb63c399
-   CONTRACT_VERSION: 3 (docs/contract.md in the agent repo)
+   Commit: 9d987e8910b58366feacdd1e61b87fa21edc206b
+   CONTRACT_VERSION: 4 (docs/contract.md in the agent repo)
    Re-vendor by copying op.ts, scene-state.ts and ops/*.ts as they are, dropping the ".js" suffix on
    their relative imports, together with scene-engine/fixtures/*.jsonl, and update this header. */
 /**
  * The Op schema: the source of truth for what travels on the `scene` text stream.
  *
- * Contract version 3 (see docs/contract.md). Operations: `add` (one element, by kind, with an
+ * Contract version 4 (see docs/contract.md). Operations: `add` (one element, by kind, with an
  * optional entrance animation), `clear` (empty a layer, optionally keeping ids), `animate`
  * (indicate or highlight something already drawn), `remove` (fade an element out), `move`,
  * `transform` (one element into another) and `scene` (put the current Scene aside and open a new
@@ -34,7 +34,7 @@ import {
   TextRegionSchema,
 } from "./ops/text";
 
-export const CONTRACT_VERSION = 3;
+export const CONTRACT_VERSION = 4;
 
 /** Named regions of the Stage. */
 export const REGIONS = ["board", "notes", "figure"] as const;

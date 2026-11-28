@@ -48,6 +48,7 @@ function view(props: Partial<DemoViewProps> = {}, locale: "ar" | "en" = "en") {
         missingParams={false}
         onStart={() => {}}
         onEnd={() => {}}
+        onAsk={async () => true}
         {...props}
       />
     </NextIntlClientProvider>,
@@ -144,6 +145,31 @@ describe("DemoView", () => {
     expect(second).toContain("المحور");
     expect(second).not.toContain("الرأس");
     expect(second).not.toContain("data-topic-pending");
+  });
+
+  it("shows the tutor as answering in place of the Topic title, in both locales, and the Topic again afterwards", () => {
+    const lesson = { index: 1, title: "الدرس الأول" };
+    const topic = { index: 2, title: "المحور" };
+    for (const [locale, messages] of [["ar", ar], ["en", en]] as const) {
+      const answering = view({ phase: "live", tutor: tutorAt({ lesson, topic, answering: true }) }, locale);
+      expect(answering).toContain("data-answering");
+      expect(answering).toContain(messages.Demo.answering);
+      expect(answering).not.toContain("data-topic");
+      expect(answering).toContain("الدرس الأول"); // the Lesson stays
+      const resumed = view({ phase: "live", tutor: tutorAt({ lesson, topic, answering: false }) }, locale);
+      expect(resumed).not.toContain("data-answering");
+      expect(resumed).toContain("المحور");
+    }
+  });
+
+  it("offers the question box only while live, with one amber button (Send) on the screen", () => {
+    const live = view({ phase: "live", tutor: tutorAt() });
+    expect(live).toContain("data-question-form");
+    expect(live).toContain(`>${en.Demo.send}<`);
+    expect(live.match(/bg-pressable/g)).toHaveLength(1);
+    for (const phase of ["idle", "connecting", "error", "ended"] as const) {
+      expect(view({ phase })).not.toContain("data-question-form");
+    }
   });
 
   it("shows no titles before the first Lesson starts", () => {

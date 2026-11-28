@@ -1142,6 +1142,10 @@
     "lessonLabel": "Lesson {index}",
     "topicLabel": "Topic {index}",
     "preparing": "The tutor is preparing the Topic…",
+    "questionLabel": "Ask the tutor",
+    "questionPlaceholder": "Type your question",
+    "send": "Send",
+    "answering": "The tutor is answering your question…",
     "chapterEnded": "The Chapter is finished. Thank you, and goodbye.",
     "contractMismatch": "The tutor’s contract version ({agent}) differs from this page’s ({page}). Update one of them before you continue.",
     "stage": {

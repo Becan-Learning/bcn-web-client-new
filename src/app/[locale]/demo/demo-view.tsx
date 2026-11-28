@@ -5,6 +5,7 @@ import { CONTRACT_VERSION } from "@/lib/stage/op";
 import type { StageState } from "@/lib/stage/stage";
 import { isContractMismatch } from "@/lib/stage/tutor-message";
 import type { TutorState } from "@/lib/stage/tutor-state";
+import { QuestionForm } from "./question-form";
 import type { DemoPhase } from "./use-demo-room";
 
 /* واجهة التجربة، عرضٌ فقط: الحالة كلها تأتي من الخطّاف في `demo-session`.
@@ -24,13 +25,15 @@ export type DemoViewProps = {
   missingParams: boolean;
   onStart: () => void;
   onEnd: () => void;
+  /** Send a typed Student question on `lk.chat`; resolves false when it could not be sent. */
+  onAsk: (text: string) => Promise<boolean>;
   /** The agent's audio element(s). */
   children?: ReactNode;
 };
 
-export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, children }: DemoViewProps) {
+export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, onAsk, children }: DemoViewProps) {
   const t = useTranslations("Demo");
-  const { agentVersion, lesson, topic, ending } = tutor;
+  const { agentVersion, lesson, topic, answering, ending } = tutor;
   const mismatch = agentVersion !== null && isContractMismatch(agentVersion);
 
   return (
@@ -69,7 +72,11 @@ export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, c
               <span aria-hidden> · </span>
               <span className="font-semibold text-ink">{lesson.title}</span>
             </p>
-            {topic ? (
+            {answering ? (
+              <p data-answering className="text-lg font-semibold text-ink">
+                {t("answering")}
+              </p>
+            ) : topic ? (
               <p data-topic className="text-lg font-semibold text-ink">
                 <span className="text-sm font-normal text-ink-2">{t("topicLabel", { index: topic.index })}</span>
                 <span aria-hidden> · </span>
@@ -84,6 +91,8 @@ export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, c
         ) : null}
 
         <Stage state={stage} />
+
+        {phase === "live" ? <QuestionForm onSend={onAsk} /> : null}
 
         {phase === "connecting" ? <p className="text-ink-2">{t("connecting")}</p> : null}
         {phase === "live" && agentVersion === null ? <p className="text-ink-2">{t("waiting")}</p> : null}
