@@ -108,7 +108,7 @@ describe("Support entry in the session", () => {
       expect(box.classList.contains(cls)).toBe(true);
       expect(railSection.classList.contains(cls)).toBe(true);
     }
-    expect(box.textContent).toContain(en.Session.supportShort);
+    expect(box.textContent).toBe(en.Session.supportHint);
   });
 
   it("keeps the support box when the lessons dropdown opens, and the dropdown holds only the lessons", async () => {
