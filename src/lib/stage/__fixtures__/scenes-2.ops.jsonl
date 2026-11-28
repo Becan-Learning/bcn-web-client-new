@@ -1,0 +1,3 @@
+{"op":"add","id":"main-point","kind":"note","region":"notes","layer":"scene","props":{"text":"النقطة الأساسية"},"meaning":"the main point of the Topic","anchor":{"speech":"sp_1","char":0}}
+{"op":"add","id":"side-remark","kind":"note","region":"notes","layer":"aside","props":{"text":"ملاحظة جانبية"},"meaning":"a side remark","anchor":{"speech":"sp_1","char":23}}
+{"op":"add","id":"back-to-main","kind":"note","region":"notes","layer":"scene","props":{"text":"نعود إلى الفكرة"},"meaning":"back to the main line","anchor":{"speech":"sp_1","char":43}}

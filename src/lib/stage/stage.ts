@@ -1,19 +1,27 @@
-import { opSchemaFor, type Op, type Region } from "./op";
+import { opSchemaFor, type Region } from "./op";
+import {
+  EMPTY_SCENE_STATE,
+  applyOp as applyToScene,
+  checkOp,
+  type SceneElement,
+  type SceneState,
+} from "./scene-state";
 
 /* حالة المسرح (Stage): طيّ نقيّ لسلسلة Ops. لا يعرف الشبكة ولا الرسم.
-   Op غير صالح يُتخطّى بتحذير في الـconsole ولا يُسقط المسرح. */
+   الطيّ نفسه (`scene-state.ts`) هو ما يطبّقه محرّك المشاهد في الوكيل: مشهد واحد حاضر،
+   ومشاهد مُزاحة جانبًا تعود كما كانت. Op غير صالح، أو يشير إلى عنصر غير موجود،
+   يُتخطّى بتحذير في الـconsole ولا يُسقط المسرح. */
 
-/** What is drawn: the elements that `add` Ops put on the Stage. A `clear` removes them. */
-export type StageElement = Extract<Op, { op: "add" }>;
+/** What is drawn: the elements that `add` Ops put on the current Scene. */
+export type StageElement = SceneElement;
 
-export type StageState = {
-  readonly elements: readonly StageElement[];
-};
+/** The current Scene's `elements` and `highlighted`, the Scenes put `aside`, and the latest animation `cue`. */
+export type StageState = SceneState;
 
-export const EMPTY_STAGE: StageState = { elements: [] };
+export const EMPTY_STAGE: StageState = EMPTY_SCENE_STATE;
 
-/** Apply one Op, as it arrived off the wire. Anything that is not a valid new Op leaves the state as it was.
-    `clear` removes every element of its layer; clearing an empty or unknown layer changes nothing. */
+/** Apply one Op, as it arrived off the wire. Anything that is not a valid Op for this Stage leaves the state as it was:
+    an invalid Op, a duplicate id, an Op that names an element that is not on the current Scene. */
 export function applyOp(state: StageState, raw: unknown): StageState {
   const parsed = opSchemaFor(raw).safeParse(raw);
   if (!parsed.success) {
@@ -21,15 +29,12 @@ export function applyOp(state: StageState, raw: unknown): StageState {
     return state;
   }
   const op = parsed.data;
-  if (op.op === "clear") {
-    const kept = state.elements.filter((element) => element.layer !== op.layer);
-    return kept.length === state.elements.length ? state : { elements: kept };
-  }
-  if (state.elements.some((element) => element.id === op.id)) {
-    console.warn("stage: skipped an op with a duplicate id", op.id);
+  const problem = checkOp(state, op);
+  if (problem !== null) {
+    console.warn("stage: skipped an op that does not fit the Scene", problem, op.id);
     return state;
   }
-  return { elements: [...state.elements, op] };
+  return applyToScene(state, op);
 }
 
 export function foldOps(ops: readonly unknown[], from: StageState = EMPTY_STAGE): StageState {

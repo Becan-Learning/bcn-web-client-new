@@ -42,8 +42,8 @@ describe("vendored contract", () => {
     expect(source).toContain(`CONTRACT_VERSION: ${CONTRACT_VERSION}`);
   });
 
-  it("is contract version 2", () => {
-    expect(CONTRACT_VERSION).toBe(2);
+  it("is contract version 3", () => {
+    expect(CONTRACT_VERSION).toBe(3);
   });
 
   it("every line of every shared fixture is a valid Op", () => {
@@ -185,9 +185,9 @@ describe("tutor messages", () => {
   const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
 
   it("parses hello from bytes and flags a different contract version", () => {
-    const hello = parseTutorMessage(bytes({ type: "hello", contract_version: 3 }));
-    expect(hello).toEqual({ type: "hello", contract_version: 3 });
-    expect(isContractMismatch(3)).toBe(true);
+    const hello = parseTutorMessage(bytes({ type: "hello", contract_version: 2 }));
+    expect(hello).toEqual({ type: "hello", contract_version: 2 });
+    expect(isContractMismatch(2)).toBe(true);
     expect(isContractMismatch(CONTRACT_VERSION)).toBe(false);
     expect(parseTutorMessage("{")).toBeNull();
     expect(parseTutorMessage('{"type":"unknown"}')).toBeNull();

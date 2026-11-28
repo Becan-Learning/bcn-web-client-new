@@ -1,18 +1,68 @@
+"use client";
+
+import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
+import { useRef, type ReactNode } from "react";
+import { exitPlan, holdsEmphasis, pulseKey, textEntrance } from "@/lib/stage/animation";
 import { splitStep } from "@/lib/stage/derivation";
 import { proseScale } from "@/lib/stage/fit";
 import type { StageElement } from "@/lib/stage/stage";
 import { Fit } from "./fit";
+import { usePulse, useStageMotion, useStageScene } from "./motion-context";
 import { Tex } from "./math";
 import { RichText } from "./rich-text";
 
-/* عناصر مناطق board وnotes. كلها تتدفّق بالترتيب بلا إحداثيات، وتظهر بحركة CSS
-   `animate-board-in` التي تتوقّف مع «تقليل الحركة» من القاعدة العامة في globals.css.
+/* عناصر مناطق board وnotes. كلها تتدفّق بالترتيب بلا إحداثيات. الدخول الافتراضي حركة CSS
+   `animate-board-in` (تتوقّف مع «تقليل الحركة» من القاعدة العامة في globals.css)؛ وإن طلب الـOp
+   دخولًا (create وwrite وfadeIn) فـMotion ينفّذه، ومع «تقليل الحركة» يقفز إلى حالته الأخيرة.
+   التلاشي عند الإزالة، وindicate وhighlight، كلها من Motion عبر `StageLi`.
    النص الغني يلتفّ بطبيعته (ويصغر قليلًا إن طال)؛ المعادلة والاشتقاق يقيسان أنفسهما في `Fit`. */
 
-const item = "animate-board-in min-w-0";
+const item = "min-w-0";
+const emphasis = "rounded-md outline outline-2 outline-offset-2 outline-warmth";
 
 type Of<K extends StageElement["kind"]> = Extract<StageElement, { kind: K }>;
+
+/** The `li` every board and notes element is: entrance, pulse, highlight and fade-out live here. */
+function StageLi({
+  element,
+  className,
+  attrs,
+  children,
+}: {
+  element: StageElement;
+  className: string;
+  attrs?: Record<string, string | undefined>;
+  children: ReactNode;
+}) {
+  const motionSettings = useStageMotion();
+  const { reduced } = motionSettings;
+  const scene = useStageScene();
+  const ref = useRef<HTMLLIElement>(null);
+  const restored = scene.restored.has(element.id);
+  const plan = restored ? null : textEntrance(element.enter, motionSettings);
+  usePulse(ref, pulseKey(scene.cue, element.id, reduced));
+  const emphasised = scene.highlighted.has(element.id) || holdsEmphasis(scene.cue, element.id, reduced);
+  const cssEntrance = element.enter === undefined && !restored ? "animate-board-in" : "";
+
+  return (
+    <motion.li
+      ref={ref}
+      data-element-id={element.id}
+      data-kind={element.kind}
+      data-emphasis={emphasised ? "" : undefined}
+      {...attrs}
+      className={`${className} ${cssEntrance} ${emphasised ? emphasis : ""}`}
+      initial={plan ? plan.initial : false}
+      animate={plan ? plan.animate : undefined}
+      transition={plan ? plan.transition : undefined}
+      variants={{ leave: (leaving: string | null) => exitPlan(leaving, element.id, reduced) }}
+      exit="leave"
+    >
+      {children}
+    </motion.li>
+  );
+}
 
 function proseStyle(text: string) {
   return { fontSize: `calc(${proseScale(text.length)} * 1em)` };
@@ -28,17 +78,16 @@ function NoteCard({ element }: { element: Of<"note"> }) {
         ? "border-s-4 border-s-ink-3"
         : "";
   return (
-    <li
-      data-element-id={element.id}
-      data-kind="note"
-      data-tone={tone}
+    <StageLi
+      element={element}
+      attrs={{ "data-tone": tone }}
       className={`${item} rounded-md border border-line bg-panel px-4 py-3 text-lg leading-base text-ink ${toneClass}`}
     >
       {tone ? <p className="text-sm font-semibold text-ink-2">{t(tone)}</p> : null}
       <p className="[overflow-wrap:anywhere]" style={proseStyle(text)}>
         <RichText text={text} />
       </p>
-    </li>
+    </StageLi>
   );
 }
 
@@ -46,31 +95,31 @@ function TextBlock({ element }: { element: Of<"text"> }) {
   const { text, size } = element.props;
   const title = size === "title";
   return (
-    <li data-element-id={element.id} data-kind="text" data-size={size} className={`${item} leading-base text-ink`}>
+    <StageLi element={element} attrs={{ "data-size": size }} className={`${item} leading-base text-ink`}>
       <p
         className={`[overflow-wrap:anywhere] ${title ? "text-xl font-bold" : "text-lg"}`}
         style={proseStyle(text)}
       >
         <RichText text={text} />
       </p>
-    </li>
+    </StageLi>
   );
 }
 
 function TexBlock({ element }: { element: Of<"tex"> }) {
   return (
-    <li data-element-id={element.id} data-kind="tex" className={`${item} text-ink`}>
+    <StageLi element={element} className={`${item} text-ink`}>
       <Fit className="py-1 text-center text-xl md:text-2xl">
         <Tex tex={element.props.tex} />
       </Fit>
-    </li>
+    </StageLi>
   );
 }
 
 function DerivationBlock({ element }: { element: Of<"derivation"> }) {
   const { steps } = element.props;
   return (
-    <li data-element-id={element.id} data-kind="derivation" className={`${item} text-ink`}>
+    <StageLi element={element} className={`${item} text-ink`}>
       <Fit className="py-1 text-lg md:text-xl">
         {/* The grid is a math block, so its columns run left-to-right whatever the page direction.
             Each comment keeps the direction of its own text. */}
@@ -107,7 +156,7 @@ function DerivationBlock({ element }: { element: Of<"derivation"> }) {
           })}
         </ol>
       </Fit>
-    </li>
+    </StageLi>
   );
 }
 
