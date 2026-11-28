@@ -1,4 +1,5 @@
 import { splitLatinRuns, type TextRun } from "./bidi";
+import type { Entrance } from "./op";
 import type { ColorRole } from "./ops/figure";
 import type { StageElement } from "./stage";
 
@@ -21,7 +22,15 @@ export type Segment = { x1: number; y1: number; x2: number; y2: number };
 export type Tick = Segment & { value: number; label: string; lx: number; ly: number };
 export type LabelView = { text: string; runs: TextRun[]; x: number; y: number };
 
-type ItemBase = { id: string; meaning: string; color: ColorRole };
+type ItemBase = {
+  id: string;
+  meaning: string;
+  color: ColorRole;
+  /** How the element enters (`create`, `write`, `fadeIn`), when the Op asked for one. */
+  enter?: Entrance;
+  /** Where the element is in the panel, so a move can slide it from where it was. */
+  origin: { x: number; y: number };
+};
 export type PlotItem = ItemBase & { kind: "plot"; paths: string[]; dashed: boolean };
 export type DotItem = ItemBase & { kind: "dot"; cx: number; cy: number; label?: LabelView };
 export type SegmentItem = ItemBase &
@@ -49,6 +58,7 @@ export type ItemView = PlotItem | DotItem | SegmentItem | RectItem | EllipseItem
 export type PanelView = {
   axesId: string;
   meaning: string;
+  enter?: Entrance;
   width: number;
   height: number;
   /** The plot area; everything the model draws is clipped to it. */
@@ -160,6 +170,7 @@ function buildPanel(axesEl: Extract<StageElement, { kind: "axes" }>, members: St
   return {
     axesId: axesEl.id,
     meaning: axesEl.meaning,
+    enter: axesEl.enter,
     width: PANEL.width,
     height: PANEL.height,
     area,
@@ -187,12 +198,13 @@ type Mapper = {
 };
 
 function buildItem(el: StageElement, m: Mapper): ItemView | null {
-  const base = { id: el.id, meaning: el.meaning };
+  const base = { id: el.id, meaning: el.meaning, enter: el.enter };
   switch (el.kind) {
     case "plot":
       return {
         ...base,
         kind: "plot",
+        origin: { x: m.px(el.props.segments[0]![0]![0]), y: m.py(el.props.segments[0]![0]![1]) },
         color: el.props.color ?? "ink",
         dashed: el.props.dashed ?? false,
         paths: el.props.segments.map(
@@ -207,6 +219,7 @@ function buildItem(el: StageElement, m: Mapper): ItemView | null {
       return {
         ...base,
         kind: "dot",
+        origin: { x: cx, y: cy },
         color: el.props.color ?? "accent",
         cx,
         cy,
@@ -222,6 +235,7 @@ function buildItem(el: StageElement, m: Mapper): ItemView | null {
       return {
         ...base,
         kind: el.kind,
+        origin: { x: x1, y: y1 },
         color: el.props.color ?? "ink",
         dashed: el.props.dashed ?? false,
         x1,
@@ -238,12 +252,13 @@ function buildItem(el: StageElement, m: Mapper): ItemView | null {
         const [bx, by] = el.props.to;
         const x = Math.min(m.px(ax), m.px(bx));
         const y = Math.min(m.py(ay), m.py(by));
-        return { ...base, ...common, kind: "rect", x, y, width: round(Math.abs(m.px(bx) - m.px(ax))), height: round(Math.abs(m.py(by) - m.py(ay))) };
+        return { ...base, ...common, kind: "rect", origin: { x, y }, x, y, width: round(Math.abs(m.px(bx) - m.px(ax))), height: round(Math.abs(m.py(by) - m.py(ay))) };
       }
       return {
         ...base,
         ...common,
         kind: "ellipse",
+        origin: { x: m.px(el.props.center[0]), y: m.py(el.props.center[1]) },
         cx: m.px(el.props.center[0]),
         cy: m.py(el.props.center[1]),
         rx: round(el.props.radius * m.sx),

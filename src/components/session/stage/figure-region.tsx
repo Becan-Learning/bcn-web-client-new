@@ -1,9 +1,14 @@
-import { useId } from "react";
+"use client";
+
+import { AnimatePresence, motion } from "motion/react";
+import { useId, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { exitPlan, holdsEmphasis, pulseKey, svgEntrance, type MotionPlan } from "@/lib/stage/animation";
 import type { TextRun } from "@/lib/stage/bidi";
 import {
   buildFigure,
   FONT,
+  type DotItem,
   type ItemView,
   type LabelView,
   type PanelView,
@@ -11,12 +16,16 @@ import {
 } from "@/lib/stage/figure";
 import type { ColorRole } from "@/lib/stage/ops/figure";
 import type { StageElement } from "@/lib/stage/stage";
+import { usePulse, useSlide, useStageMotion, useStageScene } from "./motion-context";
 
 /* منطقة الشكل: طبقة SVG لما يرسمه المعلّم على المحورين.
    الألوان أدوار فقط: كل دور يصير صنف `text-*` من توكنات الهوية، ويرثه الرسم
    عبر currentColor، فلا لون خام هنا. الأرقام غربية (تأتي جاهزة من الطيّ).
    النص عربي بأساسه، والمقاطع اللاتينية والأرقام تُعزل بـ direction ltr.
-   ظهور العنصر حركة CSS تتوقّف مع «تقليل الحركة» من القاعدة العامة. */
+   الدخول الافتراضي حركة CSS تتوقّف مع «تقليل الحركة» من القاعدة العامة؛ وإن طلب الـOp دخولًا
+   (create وwrite وfadeIn) فـMotion ينفّذه: الخطّ يُرسم بـpathLength والنقطة تنبثق، ومع «تقليل
+   الحركة» يظهر العنصر في حالته الأخيرة. move ينزلق العنصر إلى مكانه الجديد، وindicate ينبض،
+   وhighlight يثخّن الخطّ ويضيء حوله، وإزالة العنصر تُخفيه بتلاشٍ. */
 
 const ROLE_CLASS: Record<ColorRole, string> = {
   ink: "text-ink",
@@ -55,18 +64,47 @@ function Label({ label, size = FONT.label }: { label: LabelView; size?: number }
   );
 }
 
-function Line({ s }: { s: Segment }) {
-  return <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />;
+function Line({ s, draw }: { s: Segment; draw?: ReturnType<typeof planProps> }) {
+  return draw ? <motion.line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} {...draw} /> : <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />;
+}
+
+const centred = { transformBox: "fill-box", transformOrigin: "center" } as const;
+/* Emphasis is a thicker stroke and a soft glow of the element's own role color. */
+const GLOW = "[filter:drop-shadow(0_0_3px_currentColor)]";
+
+/** The motion props a plan gives an element; no plan means the element is drawn in its end state. */
+function planProps(plan: MotionPlan | null) {
+  return plan ? { initial: plan.initial, animate: plan.animate, transition: plan.transition } : { initial: false as const };
 }
 
 function Item({ item }: { item: ItemView }) {
-  const stroke = { stroke: "currentColor", strokeWidth: 2, fill: "none", strokeLinecap: "round", strokeLinejoin: "round" } as const;
-  const dash = "dashed" in item && item.dashed ? DASH : undefined;
+  const motionSettings = useStageMotion();
+  const { reduced } = motionSettings;
+  const scene = useStageScene();
+  const ref = useRef<SVGGElement>(null);
+  const restored = scene.restored.has(item.id);
+  const emphasised = scene.highlighted.has(item.id) || holdsEmphasis(scene.cue, item.id, reduced);
+  const dashed = "dashed" in item && item.dashed;
+  const entrance = restored
+    ? { group: null, stroke: null }
+    : svgEntrance(item.enter, item.kind, dashed, motionSettings);
+  usePulse(ref, pulseKey(scene.cue, item.id, reduced));
+  useSlide(ref, item.origin.x, item.origin.y, reduced);
+
+  const stroke = {
+    stroke: "currentColor",
+    strokeWidth: emphasised ? 3.5 : 2,
+    fill: "none",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  } as const;
+  const dash = dashed ? DASH : undefined;
   const tint = "filled" in item && item.filled ? { fill: "currentColor", fillOpacity: 0.18 } : {};
+  const draw = planProps(entrance.stroke);
   let body;
   switch (item.kind) {
     case "plot":
-      body = item.paths.map((d, i) => <path key={i} d={d} {...stroke} strokeDasharray={dash} />);
+      body = item.paths.map((d, i) => <motion.path key={i} d={d} {...stroke} strokeDasharray={dash} {...draw} />);
       break;
     case "dot":
       body = <circle cx={item.cx} cy={item.cy} r={4.5} fill="currentColor" stroke="none" />;
@@ -75,27 +113,68 @@ function Item({ item }: { item: ItemView }) {
     case "arrow":
       body = (
         <>
-          <line x1={item.x1} y1={item.y1} x2={item.x2} y2={item.y2} {...stroke} strokeDasharray={dash} />
+          <motion.line x1={item.x1} y1={item.y1} x2={item.x2} y2={item.y2} {...stroke} strokeDasharray={dash} {...draw} />
           {item.head ? <polygon points={item.head} fill="currentColor" stroke="none" /> : null}
         </>
       );
       break;
     case "rect":
-      body = <rect x={item.x} y={item.y} width={item.width} height={item.height} {...stroke} {...tint} strokeDasharray={dash} />;
+      body = <motion.rect x={item.x} y={item.y} width={item.width} height={item.height} {...stroke} {...tint} strokeDasharray={dash} {...draw} />;
       break;
     case "ellipse":
-      body = <ellipse cx={item.cx} cy={item.cy} rx={item.rx} ry={item.ry} {...stroke} {...tint} strokeDasharray={dash} />;
+      body = <motion.ellipse cx={item.cx} cy={item.cy} rx={item.rx} ry={item.ry} {...stroke} {...tint} strokeDasharray={dash} {...draw} />;
       break;
   }
+  const cssEntrance = item.enter === undefined && !restored ? enter : "";
   return (
-    <g data-element-id={item.id} data-kind={item.kind === "rect" || item.kind === "ellipse" ? "shape" : item.kind} role="img" aria-label={item.meaning} className={`${ROLE_CLASS[item.color]} ${enter}`}>
+    <motion.g
+      ref={ref}
+      data-element-id={item.id}
+      data-kind={item.kind === "rect" || item.kind === "ellipse" ? "shape" : item.kind}
+      data-emphasis={emphasised ? "" : undefined}
+      role="img"
+      aria-label={item.meaning}
+      className={`${ROLE_CLASS[item.color]} ${cssEntrance} ${emphasised ? GLOW : ""}`}
+      style={centred}
+      {...planProps(entrance.group)}
+      variants={{ leave: (leaving: string | null) => exitPlan(leaving, item.id, reduced) }}
+      exit="leave"
+    >
       {body}
-    </g>
+    </motion.g>
+  );
+}
+
+/** A dot's label follows the dot: it comes in with it, slides with it and leaves with it. */
+function DotLabel({ item, label }: { item: DotItem; label: LabelView }) {
+  const { reduced } = useStageMotion();
+  const scene = useStageScene();
+  const ref = useRef<SVGGElement>(null);
+  const restored = scene.restored.has(item.id);
+  useSlide(ref, item.origin.x, item.origin.y, reduced);
+  const cssEntrance = item.enter === undefined && !restored ? enter : "";
+  const fade = restored || item.enter === undefined ? null : svgEntrance("fadeIn", "dot", false, { reduced, rtl: false }).group;
+  return (
+    <motion.g
+      ref={ref}
+      className={`${ROLE_CLASS[item.color]} ${cssEntrance}`}
+      data-label-of={item.id}
+      {...planProps(fade)}
+      variants={{ leave: (leaving: string | null) => exitPlan(leaving, item.id, reduced) }}
+      exit="leave"
+    >
+      <Label label={label} />
+    </motion.g>
   );
 }
 
 function Panel({ panel }: { panel: PanelView }) {
   const clipId = useId();
+  const scene = useStageScene();
+  const motionSettings = useStageMotion();
+  const entrance = scene.restored.has(panel.axesId)
+    ? { group: null, stroke: null }
+    : svgEntrance(panel.enter, "line", false, motionSettings);
   const { area } = panel;
   return (
     <svg
@@ -113,7 +192,14 @@ function Panel({ panel }: { panel: PanelView }) {
         </clipPath>
       </defs>
 
-      <g data-axes className={`${ROLE_CLASS.muted} ${enter}`} stroke="currentColor" strokeWidth={1.5} fill="none">
+      <motion.g
+        data-axes
+        className={`${ROLE_CLASS.muted} ${panel.enter === undefined && !scene.restored.has(panel.axesId) ? enter : ""}`}
+        stroke="currentColor"
+        strokeWidth={1.5}
+        fill="none"
+        {...planProps(entrance.group)}
+      >
         {panel.grid.length > 0 ? (
           <g className="text-line" strokeWidth={1}>
             {panel.grid.map((s, i) => (
@@ -121,17 +207,19 @@ function Panel({ panel }: { panel: PanelView }) {
             ))}
           </g>
         ) : null}
-        <Line s={panel.xAxis} />
-        <Line s={panel.yAxis} />
+        <Line s={panel.xAxis} draw={entrance.stroke ? planProps(entrance.stroke) : undefined} />
+        <Line s={panel.yAxis} draw={entrance.stroke ? planProps(entrance.stroke) : undefined} />
         {[...panel.xTicks, ...panel.yTicks].map((t, i) => (
           <Line key={i} s={t} />
         ))}
-      </g>
+      </motion.g>
 
       <g clipPath={`url(#${clipId})`}>
-        {panel.items.map((item) => (
-          <Item key={item.id} item={item} />
-        ))}
+        <AnimatePresence custom={scene.leaving}>
+          {panel.items.map((item) => (
+            <Item key={item.id} item={item} />
+          ))}
+        </AnimatePresence>
       </g>
       <g data-axes-labels className={`${ROLE_CLASS.muted} ${enter}`}>
         {panel.xTicks.map((t) => (
@@ -147,13 +235,11 @@ function Panel({ panel }: { panel: PanelView }) {
         {panel.xLabel ? <Label label={panel.xLabel} /> : null}
         {panel.yLabel ? <Label label={panel.yLabel} /> : null}
       </g>
-      {panel.items.map((item) =>
-        item.kind === "dot" && item.label ? (
-          <g key={`label-${item.id}`} className={`${ROLE_CLASS[item.color]} ${enter}`} data-label-of={item.id}>
-            <Label label={item.label} />
-          </g>
-        ) : null,
-      )}
+      <AnimatePresence custom={scene.leaving}>
+        {panel.items.map((item) =>
+          item.kind === "dot" && item.label ? <DotLabel key={`label-${item.id}`} item={item} label={item.label} /> : null,
+        )}
+      </AnimatePresence>
     </svg>
   );
 }

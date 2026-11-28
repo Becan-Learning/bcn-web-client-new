@@ -1,0 +1,4 @@
+{"op":"add","id":"first-picture","kind":"note","region":"notes","layer":"scene","props":{"text":"الرسم الأول"},"meaning":"the first Scene's title","anchor":{"speech":"sp_1","char":19}}
+{"op":"scene","id":"scene-1","action":"new","anchor":{"speech":"sp_1","char":43}}
+{"op":"add","id":"second-picture","kind":"note","region":"notes","layer":"scene","props":{"text":"مشهد جديد"},"meaning":"the new Scene's title","anchor":{"speech":"sp_1","char":43}}
+{"op":"scene","id":"scene-2","action":"restore","anchor":{"speech":"sp_1","char":76}}

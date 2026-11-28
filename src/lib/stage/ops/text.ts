@@ -1,9 +1,9 @@
 /* VENDORED COPY. Do not edit here.
    Source: Becan-Learning/bcn-lk-agent-new, scene-engine/src/ops/text.ts
-   Commit: f74bd2c3b27443aedd923105f06e4e917f7eda27
-   CONTRACT_VERSION: 2 (docs/contract.md in the agent repo)
-   Re-vendor by copying op.ts and ops/*.ts as they are, dropping the ".js" suffix on their relative
-   imports, together with scene-engine/fixtures/*.jsonl, and update this header. */
+   Commit: 667e58154c4789d81b89660380a83408fb63c399
+   CONTRACT_VERSION: 3 (docs/contract.md in the agent repo)
+   Re-vendor by copying op.ts, scene-state.ts and ops/*.ts as they are, dropping the ".js" suffix on
+   their relative imports, together with scene-engine/fixtures/*.jsonl, and update this header. */
 /**
  * Element kinds for the `board` and `notes` regions: `note`, `text`, `tex` and `derivation`.
  *

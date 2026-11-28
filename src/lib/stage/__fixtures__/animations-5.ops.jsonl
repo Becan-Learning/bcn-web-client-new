@@ -1,0 +1,2 @@
+{"op":"add","id":"hint","kind":"note","region":"notes","layer":"scene","props":{"text":"تلميح: ابحث عن الرأس"},"meaning":"a hint for the student","anchor":{"speech":"sp_1","char":0}}
+{"op":"remove","id":"remove-1","target":"hint","anchor":{"speech":"sp_1","char":15}}
