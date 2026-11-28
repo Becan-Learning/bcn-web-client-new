@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { Room, RoomEvent } from "livekit-client";
+import { ConnectionState, Room, RoomEvent } from "livekit-client";
+import { sendQuestion } from "@/lib/stage/question";
 import { createLineReader } from "@/lib/stage/scene-lines";
 import { applyOp, EMPTY_STAGE } from "@/lib/stage/stage";
 import { parseTutorMessage } from "@/lib/stage/tutor-message";
@@ -57,6 +58,13 @@ export function useDemoRoom(url: string | undefined, token: string | undefined) 
     }
   }, [url, token]);
 
+  /* سؤال الطالب المكتوب إلى المعلّم على `lk.chat`. */
+  const ask = useCallback(async (text: string) => {
+    const joined = roomRef.current;
+    if (!joined || joined.state !== ConnectionState.Connected) return false;
+    return sendQuestion(joined.localParticipant, text);
+  }, []);
+
   const end = useCallback(() => {
     void roomRef.current?.disconnect();
   }, []);
@@ -68,5 +76,5 @@ export function useDemoRoom(url: string | undefined, token: string | undefined) 
     [],
   );
 
-  return { phase, room, tutor, stage, start, end };
+  return { phase, room, tutor, stage, start, end, ask };
 }

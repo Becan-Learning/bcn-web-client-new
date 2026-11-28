@@ -43,7 +43,7 @@ describe("vendored contract", () => {
   });
 
   it("is contract version 3", () => {
-    expect(CONTRACT_VERSION).toBe(3);
+    expect(CONTRACT_VERSION).toBe(4);
   });
 
   it("every line of every shared fixture is a valid Op", () => {
@@ -207,6 +207,11 @@ describe("tutor messages", () => {
     expect(parseTutorMessage(bytes({ type: "session_ending" }))).toEqual({ type: "session_ending" });
   });
 
+  it("parses answer_started and answer_ended", () => {
+    expect(parseTutorMessage(bytes({ type: "answer_started" }))).toEqual({ type: "answer_started" });
+    expect(parseTutorMessage(JSON.stringify({ type: "answer_ended" }))).toEqual({ type: "answer_ended" });
+  });
+
   it("ignores messages whose fields are wrong", () => {
     expect(parseTutorMessage(bytes({ type: "lesson_started", index: 0, title: "x" }))).toBeNull();
     expect(parseTutorMessage(bytes({ type: "topic_started", index: 1 }))).toBeNull();
@@ -244,6 +249,22 @@ describe("tutor state from tutor events", () => {
     expect(state.topic).toBeNull();
   });
 
+  it("shows the tutor as answering between answer_started and answer_ended, keeping the Lesson and Topic", () => {
+    const topic = play([
+      { type: "lesson_started", index: 1, title: "أ" },
+      { type: "topic_started", index: 2, title: "ب" },
+    ]);
+    expect(topic.answering).toBe(false);
+    const answering = play([{ type: "answer_started" }], topic);
+    expect(answering).toEqual({ ...topic, answering: true });
+    // A follow-up question cuts in: the tutor is still answering.
+    expect(play([{ type: "answer_started" }], answering).answering).toBe(true);
+    const resumed = play([{ type: "answer_ended" }], answering);
+    expect(resumed).toEqual(topic);
+    // The Topic goes on after the answer; a new Topic starting also means the answer is over.
+    expect(play([{ type: "topic_started", index: 3, title: "ج" }], answering).answering).toBe(false);
+  });
+
   it("session_ending marks the end and keeps the last titles; junk changes nothing", () => {
     const before = play([
       { type: "lesson_started", index: 2, title: "ج" },
@@ -251,6 +272,7 @@ describe("tutor state from tutor events", () => {
     ]);
     const after = play([{ type: "session_ending" }, { type: "nonsense" }, "x"], before);
     expect(after).toEqual({ ...before, ending: true });
+    expect(play([{ type: "session_ending" }], play([{ type: "answer_started" }])).answering).toBe(false);
     expect(before.ending).toBe(false);
   });
 });

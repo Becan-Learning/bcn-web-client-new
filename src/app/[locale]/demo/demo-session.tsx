@@ -9,7 +9,7 @@ import { useDemoRoom } from "./use-demo-room";
 /* سطح الجلسة الداكن نفسه (`data-theme="dark" data-surface="session"` داخل SessionShell). */
 export function DemoSession({ url, token }: { url?: string; token?: string }) {
   const reduce = useReducedMotion();
-  const { phase, room, tutor, stage, start, end } = useDemoRoom(url, token);
+  const { phase, room, tutor, stage, start, end, ask } = useDemoRoom(url, token);
 
   return (
     <SessionShell reduce={reduce}>
@@ -20,6 +20,7 @@ export function DemoSession({ url, token }: { url?: string; token?: string }) {
         missingParams={!url || !token}
         onStart={() => void start()}
         onEnd={end}
+        onAsk={ask}
       >
         {room ? (
           <RoomContext.Provider value={room}>

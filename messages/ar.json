@@ -1142,6 +1142,10 @@
     "lessonLabel": "الدرس {index}",
     "topicLabel": "الموضوع {index}",
     "preparing": "المعلّم يجهّز الموضوع…",
+    "questionLabel": "اسأل المعلّم",
+    "questionPlaceholder": "اكتب سؤالك هنا",
+    "send": "أرسل",
+    "answering": "المعلّم يجيب عن سؤالك…",
     "chapterEnded": "انتهى الشرح. شكرا لك، وإلى اللقاء.",
     "contractMismatch": "إصدار العقد عند المعلّم ({agent}) يختلف عن إصدار هذه الصفحة ({page}). حدّث أحدهما قبل ما تكمل.",
     "stage": {

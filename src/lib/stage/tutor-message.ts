@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { CONTRACT_VERSION } from "./op";
 
-/* رسائل موضوع `tutor` (بيانات موثوقة، من الوكيل إلى المتصفح). العقد v2:
-   hello، lesson_started، topic_started، session_ending. الفهارس تبدأ من 1. */
+/* رسائل موضوع `tutor` (بيانات موثوقة، من الوكيل إلى المتصفح). العقد v4:
+   hello، lesson_started، topic_started، answer_started، answer_ended، session_ending. الفهارس تبدأ من 1. */
 
 const HelloSchema = z.object({
   type: z.literal("hello"),
@@ -21,12 +21,19 @@ const TopicStartedSchema = z.object({
   title: z.string().min(1).max(200),
 });
 
+/* الإجابة الحية: `answer_started` عند وصول سؤال (وقد تتكرر لسؤال متابعة)، و`answer_ended` مرة واحدة
+   حين يعود المسرح إلى حاله وقبل أن يكمل الموضوع. */
+const AnswerStartedSchema = z.object({ type: z.literal("answer_started") });
+const AnswerEndedSchema = z.object({ type: z.literal("answer_ended") });
+
 const SessionEndingSchema = z.object({ type: z.literal("session_ending") });
 
 const TutorMessageSchema = z.discriminatedUnion("type", [
   HelloSchema,
   LessonStartedSchema,
   TopicStartedSchema,
+  AnswerStartedSchema,
+  AnswerEndedSchema,
   SessionEndingSchema,
 ]);
 
