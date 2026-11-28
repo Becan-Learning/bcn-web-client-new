@@ -34,6 +34,7 @@ import {
   TokenSource,
 } from "livekit-client";
 import { createStudentQuestion, type StudentQuestionStatus } from "./student-question";
+import { useAskShortcuts } from "./use-ask-shortcuts";
 import { getExperience } from "@/lib/experience";
 import type { ChapterContent } from "@/lib/session/types";
 import { tokenSchema } from "@/lib/courses/schema";
@@ -476,33 +477,17 @@ function SessionScreen({
     void studentQuestion.start(agent.internal.agentParticipant!.identity, agent.state);
   }, [canAsk, studentQuestion, agent.internal.agentParticipant, agent.state]);
 
-  useEffect(() => {
-    if (isMobile) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target;
-      if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey ||
-        (target instanceof HTMLElement && (target.closest("input, textarea, select") || target.isContentEditable)) ||
-        document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
-      if (event.code === "Space") {
-        if (studentQuestionStatus.startedAt !== null) {
-          event.preventDefault();
-          void studentQuestion.close("end_turn");
-        } else if (canAsk) {
-          event.preventDefault();
-          startStudentQuestion();
-        }
-      } else if (event.key === "Escape" &&
-        (studentQuestionStatus.startedAt !== null || studentQuestionStatus.busy)) {
-        event.preventDefault();
-        void studentQuestion.close("cancel_turn");
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [
-    isMobile, canAsk, startStudentQuestion, studentQuestion,
-    studentQuestionStatus.startedAt, studentQuestionStatus.busy,
-  ]);
+  const sendStudentQuestion = useCallback(() => void studentQuestion.close("end_turn"), [studentQuestion]);
+  const cancelStudentQuestion = useCallback(() => void studentQuestion.close("cancel_turn"), [studentQuestion]);
+  useAskShortcuts({
+    enabled: !isMobile,
+    canAsk,
+    recording: studentQuestionStatus.startedAt !== null,
+    busy: studentQuestionStatus.busy,
+    onAsk: startStudentQuestion,
+    onSend: sendStudentQuestion,
+    onCancel: cancelStudentQuestion,
+  });
 
   const endNow = () => {
     setConfirmEnd(false);

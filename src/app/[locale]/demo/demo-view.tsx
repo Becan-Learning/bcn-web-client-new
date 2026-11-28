@@ -1,20 +1,27 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { StudentQuestionRecorder } from "@/components/session/parts";
 import { Stage } from "@/components/session/stage/stage";
+import { MicIcon } from "@/components/becan/icons";
 import { CONTRACT_VERSION } from "@/lib/stage/op";
 import type { StageState } from "@/lib/stage/stage";
 import { isContractMismatch } from "@/lib/stage/tutor-message";
 import type { TutorState } from "@/lib/stage/tutor-state";
 import { QuestionForm } from "./question-form";
+import type { DemoVoice } from "./use-demo-ask";
 import type { DemoPhase } from "./use-demo-room";
 
 /* واجهة التجربة، عرضٌ فقط: الحالة كلها تأتي من الخطّاف في `demo-session`.
-   زرّ كهرماني واحد في الشاشة (ابدأ)، وإنهاء زرّ ثانوي. */
+   زرّ كهرماني واحد في الشاشة: «ابدأ» قبل الجلسة، ثم «أرسل» السؤال المكتوب؛ وأثناء تسجيل سؤال
+   منطوق يحلّ «أرسل» المسجِّل محلّه (النموذج المكتوب يُخفى). «اسأل» وإنهاء زرّان محدّدان بإطار. */
 
 const primaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-pill bg-pressable px-6 text-base font-semibold text-on-pressable disabled:pointer-events-none disabled:opacity-50";
 const secondaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-surface px-5 text-base font-semibold text-ink hover:bg-surface-2";
+
+const outlinedButton =
+  "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-pill border border-line bg-surface px-4 text-base font-semibold text-ink hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-50";
 
 export type DemoViewProps = {
   phase: DemoPhase;
@@ -27,12 +34,17 @@ export type DemoViewProps = {
   onEnd: () => void;
   /** Send a typed Student question on `lk.chat`; resolves false when it could not be sent. */
   onAsk: (text: string) => Promise<boolean>;
+  /** Ask by voice (Student question): absent when the page has no microphone to offer. */
+  voice?: DemoVoice;
+  reduce?: boolean;
   /** The agent's audio element(s). */
   children?: ReactNode;
 };
 
-export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, onAsk, children }: DemoViewProps) {
+export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, onAsk, voice, reduce = false, children }: DemoViewProps) {
   const t = useTranslations("Demo");
+  const tSession = useTranslations("Session");
+  const recording = voice !== undefined && voice.startedAt !== null;
   const { agentVersion, lesson, topic, answering, ending } = tutor;
   const mismatch = agentVersion !== null && isContractMismatch(agentVersion);
 
@@ -92,7 +104,57 @@ export function DemoView({ phase, stage, tutor, missingParams, onStart, onEnd, o
 
         <Stage state={stage} />
 
-        {phase === "live" ? <QuestionForm onSend={onAsk} /> : null}
+        {phase === "live" ? (
+          <>
+            {voice && recording && voice.startedAt !== null ? (
+              <div data-recorder className="flex flex-col gap-2">
+                <p role="status" className="sr-only">
+                  {t("listening")}
+                </p>
+                <div className="rounded-pill border border-line bg-panel px-1.5 py-1">
+                  <StudentQuestionRecorder
+                    startedAt={voice.startedAt}
+                    microphoneTrack={voice.microphone}
+                    reduce={reduce}
+                    onSend={voice.onSend}
+                    onCancel={voice.onCancel}
+                    onSpeech={voice.onSpeech}
+                  />
+                </div>
+              </div>
+            ) : null}
+            {/* Kept mounted while recording so a half-typed question is not lost; hidden, so its amber Send is off screen. */}
+            <div hidden={recording}>
+              <QuestionForm
+                onSend={onAsk}
+                trailing={
+                  voice ? (
+                    <button
+                      type="button"
+                      data-ask
+                      onClick={voice.onAsk}
+                      disabled={!voice.canAsk}
+                      title={voice.micUnavailable ? tSession("studentQuestionMicUnavailable") : tSession("studentQuestionShortcut")}
+                      className={outlinedButton}
+                    >
+                      <MicIcon />
+                      {tSession("studentQuestionAsk")}
+                    </button>
+                  ) : null
+                }
+              />
+            </div>
+            {voice ? (
+              <p role="status" data-voice-note className="min-h-5 text-sm text-ink-2">
+                {voice.noSpeech
+                  ? tSession("studentQuestionNoSpeech")
+                  : voice.micUnavailable
+                    ? tSession("studentQuestionMicUnavailable")
+                    : null}
+              </p>
+            ) : null}
+          </>
+        ) : null}
 
         {phase === "connecting" ? <p className="text-ink-2">{t("connecting")}</p> : null}
         {phase === "live" && agentVersion === null ? <p className="text-ink-2">{t("waiting")}</p> : null}

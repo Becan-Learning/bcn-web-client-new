@@ -1012,7 +1012,7 @@ export function Toolbar({
 }
 
 /** Audio subscriptions and clock stay here so they never re-render the teaching board. */
-function StudentQuestionRecorder({
+export function StudentQuestionRecorder({
   startedAt,
   microphoneTrack,
   reduce,

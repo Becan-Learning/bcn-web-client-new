@@ -9,6 +9,7 @@ import { EMPTY_STAGE, foldOps } from "@/lib/stage/stage";
 import { INITIAL_TUTOR, type TutorState } from "@/lib/stage/tutor-state";
 import { firstParam, isDemoAvailable, parseServerUrl } from "./availability";
 import { DemoView, type DemoViewProps } from "./demo-view";
+import type { DemoVoice } from "./use-demo-ask";
 import DemoPage from "./page";
 
 /* next-intl/server needs the Next runtime; the not-found check runs before it is used. */
@@ -202,5 +203,74 @@ describe("DemoView", () => {
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(/);
     expect(html).not.toMatch(/\b(ml|mr|pl|pr)-\d|\b(left|right)-\d|text-(left|right)/);
     expect(html).not.toMatch(/ dir="(rtl)"/);
+  });
+});
+
+const voiceAt = (state: Partial<DemoVoice> = {}): DemoVoice => ({
+  canAsk: true,
+  micUnavailable: false,
+  startedAt: null,
+  busy: false,
+  noSpeech: false,
+  microphone: null,
+  onAsk: () => {},
+  onSend: () => {},
+  onCancel: () => {},
+  onSpeech: () => {},
+  ...state,
+});
+
+describe("DemoView: Ask by voice", () => {
+  const live = (voice: DemoVoice | undefined, locale: "ar" | "en" = "en") =>
+    view({ phase: "live", tutor: tutorAt(), voice }, locale);
+  const askButton = (html: string) => /<button[^>]*data-ask[^>]*>/.exec(html)?.[0] ?? "";
+
+  it.each(["ar", "en"] as const)("offers an Ask button beside the typed question, in %s", (locale) => {
+    const html = live(voiceAt(), locale);
+    expect(askButton(html)).toContain('type="button"');
+    expect(askButton(html)).not.toContain('disabled=""');
+    expect(html).toContain((locale === "ar" ? ar : en).Session.studentQuestionAsk);
+  });
+
+  it("has no Ask control when the page has no voice, and not outside a live session", () => {
+    expect(live(undefined)).not.toContain("data-ask");
+    expect(view({ phase: "idle", voice: voiceAt() })).not.toContain("data-ask");
+  });
+
+  it("keeps the typed Send as the one amber button and styles Ask as an outlined button", () => {
+    const html = live(voiceAt());
+    expect(html.match(/bg-pressable/g)).toHaveLength(1);
+    expect(askButton(html)).toContain("border border-line");
+    expect(askButton(html)).not.toContain("bg-pressable");
+    expect(askButton(html)).toContain("min-h-11"); // a 44px touch target
+  });
+
+  it("disables Ask when it cannot be used and says why when the microphone is unavailable", () => {
+    expect(askButton(live(voiceAt({ canAsk: false })))).toContain('disabled=""');
+    const html = live(voiceAt({ canAsk: false, micUnavailable: true }));
+    expect(html).toContain(en.Session.studentQuestionMicUnavailable);
+  });
+
+  it("shows the recorder while the microphone is open, whose Send replaces the typed one as the amber button", () => {
+    const html = live(voiceAt({ startedAt: Date.now(), canAsk: false }));
+    expect(html).toContain("data-recorder");
+    expect(html).toContain(en.Demo.listening);
+    expect(html).toContain(`aria-label="${en.Session.studentQuestionCancel}"`);
+    expect(html).toContain(`>${en.Session.send}<`);
+    // The typed form stays mounted (a half-typed question is kept) but hidden, so its amber Send is off screen.
+    expect(html).toMatch(/<div hidden=""[^>]*><form data-question-form/);
+    expect(live(voiceAt())).not.toMatch(/<div hidden=""/);
+    expect(live(voiceAt())).not.toContain("data-recorder");
+  });
+
+  it("tells the student when nothing was heard, in both locales", () => {
+    expect(live(voiceAt({ noSpeech: true }))).toContain(en.Session.studentQuestionNoSpeech.replace("'", "&#x27;"));
+    expect(live(voiceAt({ noSpeech: true }), "ar")).toContain(ar.Session.studentQuestionNoSpeech);
+  });
+
+  it("uses tokens and logical directions only", () => {
+    const html = live(voiceAt({ startedAt: Date.now(), noSpeech: true }), "ar");
+    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(/);
+    expect(html).not.toMatch(/\b(ml|mr|pl|pr)-\d|\b(left|right)-\d|text-(left|right)/);
   });
 });

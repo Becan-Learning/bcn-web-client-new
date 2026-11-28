@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { MAX_QUESTION_CHARS } from "@/lib/stage/question";
 
@@ -10,7 +10,7 @@ import { MAX_QUESTION_CHARS } from "@/lib/stage/question";
 const sendButton =
   "inline-flex min-h-11 shrink-0 items-center justify-center rounded-pill bg-pressable px-6 text-base font-semibold text-on-pressable disabled:pointer-events-none disabled:opacity-50";
 
-export function QuestionForm({ onSend }: { onSend: (text: string) => Promise<boolean> }) {
+export function QuestionForm({ onSend, trailing }: { onSend: (text: string) => Promise<boolean>; trailing?: ReactNode }) {
   const t = useTranslations("Demo");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -41,6 +41,7 @@ export function QuestionForm({ onSend }: { onSend: (text: string) => Promise<boo
           placeholder={t("questionPlaceholder")}
           className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-ground px-4 text-ink placeholder:text-ink-2"
         />
+        {trailing}
         <button type="submit" disabled={empty || sending} className={sendButton}>
           {t("send")}
         </button>
